@@ -77,7 +77,7 @@ func comm(s string) (string, string) {
 
 }
 
-func Init(opts Ipac) (Ipac) {
+func Init(o *Ipac) {
 
 	// remove existing firewall rules created by go-ip-ac
 	if (runtime.GOOS == "linux") {
@@ -89,52 +89,37 @@ func Init(opts Ipac) (Ipac) {
 		comm("sudo iptables -N goipac")
 	}
 
-	var o Ipac
-	o.CleanupLoopSeconds = 60
-	o.BlockForSeconds = 60 * 60 * 24
-	o.BlockIpv6SubnetsGroupDepth = 4
-	o.BlockIpv6SubnetsBreach = 40
-	o.WarnAfterNewConnections = 80
-	o.WarnAfterUnauthedAttempts = 5
-	o.BlockAfterNewConnections = 600
-	o.BlockAfterUnauthedAttempts = 300
-	o.NotifyAfterAbsurdAuthAttempts = 20
-	o.Mail = ""
+	// set options passed to init as default options
+	if (o.CleanupLoopSeconds == 0) {
+		o.CleanupLoopSeconds = 60
+	}
+	if (o.BlockForSeconds == 0) {
+		o.BlockForSeconds = 60 * 60 * 24
+	}
+	if (o.BlockIpv6SubnetsGroupDepth == 0) {
+		o.BlockIpv6SubnetsGroupDepth = 4
+	}
+	if (o.BlockIpv6SubnetsBreach == 0) {
+		o.BlockIpv6SubnetsBreach = 40
+	}
+	if (o.WarnAfterNewConnections == 0) {
+		o.WarnAfterNewConnections = 80
+	}
+	if (o.WarnAfterUnauthedAttempts == 0) {
+		o.WarnAfterUnauthedAttempts = 5
+	}
+	if (o.BlockAfterNewConnections == 0) {
+		o.BlockAfterNewConnections = 600
+	}
+	if (o.BlockAfterUnauthedAttempts == 0) {
+		o.BlockAfterUnauthedAttempts = 300
+	}
+	if (o.NotifyAfterAbsurdAuthAttempts == 0) {
+		o.NotifyAfterAbsurdAuthAttempts = 20
+	}
 	o.Purge = false
 
-	// set options passed to init as default options
-	if (opts.CleanupLoopSeconds != 0) {
-		o.CleanupLoopSeconds = opts.CleanupLoopSeconds
-	}
-	if (opts.BlockForSeconds != 0) {
-		o.BlockForSeconds = opts.BlockForSeconds
-	}
-	if (opts.BlockIpv6SubnetsGroupDepth != 0) {
-		o.BlockIpv6SubnetsGroupDepth = opts.BlockIpv6SubnetsGroupDepth
-	}
-	if (opts.BlockIpv6SubnetsBreach != 0) {
-		o.BlockIpv6SubnetsBreach = opts.BlockIpv6SubnetsBreach
-	}
-	if (opts.WarnAfterNewConnections != 0) {
-		o.WarnAfterNewConnections = opts.WarnAfterNewConnections
-	}
-	if (opts.WarnAfterUnauthedAttempts != 0) {
-		o.WarnAfterUnauthedAttempts = opts.WarnAfterUnauthedAttempts
-	}
-	if (opts.BlockAfterNewConnections != 0) {
-		o.BlockAfterNewConnections = opts.BlockAfterNewConnections
-	}
-	if (opts.BlockAfterUnauthedAttempts != 0) {
-		o.BlockAfterUnauthedAttempts = opts.BlockAfterUnauthedAttempts
-	}
-	if (opts.NotifyAfterAbsurdAuthAttempts != 0) {
-		o.NotifyAfterAbsurdAuthAttempts = opts.NotifyAfterAbsurdAuthAttempts
-	}
-	if (opts.Mail != "") {
-		o.Mail = opts.Mail
-	}
-
-	fmt.Printf("default options: %+v\n", o)
+	//fmt.Printf("default options: %+v\n", o)
 
 	o.LastCleanup = int(time.Now().Unix())
 
@@ -146,8 +131,9 @@ func Init(opts Ipac) (Ipac) {
 			case <-done:
 				return
 			case t := <-loop_ticker.C:
-				_ = t
-				//fmt.Println("Tick at", t)
+				//_ = t
+				//fmt.Printf("ipac at %s\n", t)
+				//fmt.Println(o.Ips)
 
 				// consider the time since the last interval
 				var seconds_since_last_cleanup = int(time.Now().Unix()) - o.LastCleanup
@@ -224,8 +210,6 @@ func Init(opts Ipac) (Ipac) {
 	//loop_ticker.Stop()
 	//done <- true
 
-	return o
-
 }
 
 func modify_ip_block_os(block bool, i Ip) {
@@ -250,7 +234,7 @@ func modify_ip_block_os(block bool, i Ip) {
 
 }
 
-func IpDetails(o Ipac, addr string) (Ip) {
+func IpDetails(o *Ipac, addr string) (Ip) {
 
 	var i Ip
 
@@ -265,13 +249,13 @@ func IpDetails(o Ipac, addr string) (Ip) {
 
 }
 
-func TestIpWarn(o Ipac, addr string) (bool) {
+func TestIpWarn(o *Ipac, addr string) (bool) {
 
 	return IpDetails(o, addr).Warn
 
 }
 
-func TestIpAllowed(o Ipac, addr string) (bool) {
+func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 	// always ran at the start of any request
 	// returns false if the IP address has made too many unauthenticated requests and is not allowed
@@ -279,6 +263,9 @@ func TestIpAllowed(o Ipac, addr string) (bool) {
 
 	// get the ip entry
 	var entry = IpDetails(o, addr)
+
+	// set the last access time of the ip
+	entry.LastAccess = int(time.Now().Unix())
 
 	if (entry.Addr == addr) {
 
@@ -330,15 +317,22 @@ func TestIpAllowed(o Ipac, addr string) (bool) {
 
 		}
 
+		// update the o.Ips table
+		for l := range o.Ips {
+			if (o.Ips[l].Addr == addr) {
+				o.Ips[l] = entry
+				break
+			}
+		}
+
 	} else {
 
 		// this ip address is new
+		entry.Addr = addr
 		o.Ips = append(o.Ips, entry)
+		//fmt.Println("ipac.TestIpAllowed, new ip added", len(o.Ips), entry)
 
 	}
-
-	// set the last access time of the ip
-	entry.LastAccess = int(time.Now().Unix())
 
 	if (entry.Blocked == true) {
 		return false
@@ -346,15 +340,14 @@ func TestIpAllowed(o Ipac, addr string) (bool) {
 		return true
 	}
 
-	return true
 }
 
-func Purge(o Ipac) {
+func Purge(o *Ipac) {
 	// clear all ips
 	o.Purge = true
 }
 
-func ModifyAuth(o Ipac, authed int, addr string) {
+func ModifyAuth(o *Ipac, authed int, addr string) {
 
 	if (o.Purge == true) {
 		// do not allow modification while purging
@@ -414,5 +407,15 @@ func ModifyAuth(o Ipac, authed int, addr string) {
 
 	// set the last auth time of the ip
 	entry.LastAuth = now
+
+	// update the o.Ips table
+	for l := range o.Ips {
+		if (o.Ips[l].Addr == addr) {
+			o.Ips[l] = entry
+			break
+		}
+	}
+
+	return
 
 }
