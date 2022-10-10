@@ -359,7 +359,7 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 
 	var now = int(time.Now().Unix())
 
-	if (entry.Authed == true && authed == 2) {
+	if (entry.Authed == true && authed == 1) {
 
 		// an IP address is authorized but invalid authorizations are happening from the IP
 		// perhaps someone else at the location is abusing the authed IP address and trying to guess
