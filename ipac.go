@@ -10,6 +10,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 package ipac
 
 import (
+	"os/exec"
+	"bytes"
 	"time"
 	"fmt"
 	"runtime"
@@ -35,6 +37,7 @@ type Ipac struct {
 	NotifyAfterAbsurdAuthAttempts	int
 	Mail				string
 	Purge				bool
+	LastCleanup			int64
 	NextEmailBlockedIps		[]string
 	NextEmailAbsurdIps		[]string
 	Ips				[]Ip
@@ -62,16 +65,16 @@ func comm(s string) (string, string) {
 
 }
 
-func init(opts Ipac) (Ipac) {
+func Init(opts Ipac) (Ipac) {
 
 	// remove existing firewall rules created by go-ip-ac
-	if (runtime.GOOS == 'linux') {
+	if (runtime.GOOS == "linux") {
 		// first flush the goipac chain
-		_, _ := comm("sudo iptables -F goipac")
+		comm("sudo iptables -F goipac")
 		// then delete the chain
-		_, _ := comm("sudo iptables -X goipac")
+		comm("sudo iptables -X goipac")
 		// then add the chain
-		_, _ := comm("sudo iptables -N goipac")
+		comm("sudo iptables -N goipac")
 	}
 
 	var o Ipac
@@ -119,32 +122,41 @@ func init(opts Ipac) (Ipac) {
 		o.Mail = opts.Mail
 	}
 
+	fmt.Printf("default options: %+v\n", o)
+
 	o.LastCleanup = time.Now().Unix()
-	// run a thread to clean and manage routines
-	clean_loop := time.NewTicker(opts.CleanupLoopSeconds * time.Second)
+
+	loop_ticker := time.NewTicker(time.Duration(o.CleanupLoopSeconds) * time.Second)
 	done := make(chan bool)
 	go func() {
 		for {
 			select {
 			case <-done:
 				return
-			case t := <-clean_loop.C:
+			case t := <-loop_ticker.C:
+				//_ = t
 				fmt.Println("Tick at", t)
 			}
 		}
 	}()
 
-	//clean_loop.Stop()
+	//loop_ticker.Stop()
 	//done <- true
 
 	return o
 
 }
 
+func IpDetails(o Ipac, addr string) (Ip) {
+	return Ip{}
+}
+
 func TestIpWarn(o Ipac, addr string) (bool) {
+	return true
 }
 
 func TestIpAllowed(o Ipac, addr string) (bool) {
+	return true
 }
 
 func Purge(o Ipac) {
