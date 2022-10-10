@@ -7,7 +7,7 @@ In your socket/request/api code
 
 ## default options
 
-Set these in the object {} passed as the first argument to `ipac.init();` if you want to change the defaults shown here.
+Set these in the object {} passed as the first argument to `ipac.Init()` if you want to change the defaults shown here.
 
 ```
 // default configurable options
