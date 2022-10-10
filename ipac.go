@@ -131,7 +131,7 @@ func Init(o *Ipac) {
 			case <-done:
 				return
 			case t := <-loop_ticker.C:
-				//_ = t
+				_ = t
 				//fmt.Printf("ipac at %s\n", t)
 				//fmt.Println(o.Ips)
 
