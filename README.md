@@ -1,3 +1,9 @@
+## installation
+
+```
+GO111MODULE=off go get github.com/andrewhodel/go-ip-ac
+```
+
 ## usage
 
 In your socket/request/api code
