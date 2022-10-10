@@ -70,7 +70,7 @@ func comm(s string) (string, string) {
 	_ = cmd.Run()
 
 	if (len(stderr.String()) > 0) {
-		fmt.Printf("comm() stderr for `%s`\n\t%s\n", s, stderr.String())
+		//fmt.Printf("comm() stderr for `%s`\n\t%s\n", s, stderr.String())
 	}
 
 	return out.String(), stderr.String()
