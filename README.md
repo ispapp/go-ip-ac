@@ -1,17 +1,16 @@
 ## installation
 
+**Requires** this Go Module to be in `$HOME/go/src/github.com/andrewhodel/go-ip-ac` to work with `iptables`.
+
 ```
 GO111MODULE=off go get github.com/andrewhodel/go-ip-ac
 ```
 
 ## usage
 
-A `select{}` must be at the end of the `main()` function.
+A `select{}` **must** be at the end of the `main()` function.
 
-In your socket/request/api code
-
-```
-```
+Read `examples/example.go`
 
 ## default options
 
