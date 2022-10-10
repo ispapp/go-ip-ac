@@ -6,6 +6,8 @@ GO111MODULE=off go get github.com/andrewhodel/go-ip-ac
 
 ## usage
 
+A `select{}` must be at the end of the `main()` function.
+
 In your socket/request/api code
 
 ```
