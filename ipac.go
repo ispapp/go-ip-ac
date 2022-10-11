@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"sync"
 	"strings"
+	"math"
 )
 
 type Ip struct {
@@ -224,7 +225,17 @@ func clean(o *Ipac) {
 
 		}
 
-		if (o.Ipv6Subnets[i].IpBans >= o.BlockIpv6SubnetsBreach) {
+		// calculate the number of banned ips required for this prefix to be blocked
+		// BlockIpv6SubnetsGroupDepth = 4
+		// BlockIpv6SubnetsBreach = 40
+		// pow(40, 4 - num_of_groups + 1)
+		// ffff = pow(40, 4)
+		// ffff:ffff = pow(40, 3)
+		// ffff:ffff:ffff = pow(40, 2)
+		// ffff:ffff:ffff:ffff = pow(40, 1)
+		var ip_count_to_breach_subnet = int(math.Pow(float64(o.BlockIpv6SubnetsBreach), float64(o.BlockIpv6SubnetsGroupDepth - len(strings.Split(o.Ipv6Subnets[i].Group, ":")) + 1)))
+
+		if (o.Ipv6Subnets[i].IpBans >= ip_count_to_breach_subnet) {
 
 			// this subnet group has breached the limit
 			// block it
