@@ -212,6 +212,8 @@ func Init(o *Ipac) {
 							// unblock this subnet group
 							ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
 							// delete it
+							copy(o.Ipv6Subnets[i:], o.Ipv6Subnets[i+1:]) // Shift a[i+1:] left one index.
+							o.Ipv6Subnets = o.Ipv6Subnets[:len(o.Ipv6Subnets)-1]
 						} else {
 							// increment the blocked subnet count for this clean loop iteration
 							cblocked_subnet += 1
