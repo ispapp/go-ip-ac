@@ -16,6 +16,7 @@ import (
 	"time"
 	//"fmt"
 	"runtime"
+	"sync"
 )
 
 type Ip struct {
@@ -56,6 +57,8 @@ type Ipac struct {
 	WarnCount			int
 	BlockedSubnetCount		int
 }
+
+var ipac_mutex = &sync.Mutex{}
 
 func comm(s string) (string, string) {
 
@@ -151,6 +154,8 @@ func Init(o *Ipac) {
 					continue
 				}
 
+				ipac_mutex.Lock()
+
 				// clear expired ips
 				for i := range o.Ips {
 
@@ -187,6 +192,9 @@ func Init(o *Ipac) {
 				o.BlockedCount = cblocked
 				o.WarnCount = cwarn
 
+				// update the last cleanup
+				o.LastCleanup = int(time.Now().Unix())
+
 				// IPv6
 
 				if (o.Purge == true) {
@@ -200,8 +208,7 @@ func Init(o *Ipac) {
 
 				}
 
-				// update the last cleanup
-				o.LastCleanup = int(time.Now().Unix())
+				ipac_mutex.Unlock()
 
 			}
 		}
@@ -238,12 +245,16 @@ func IpDetails(o *Ipac, addr string) (Ip) {
 
 	var i Ip
 
+	ipac_mutex.Lock()
+
 	for l := range o.Ips {
 		if (o.Ips[l].Addr == addr) {
 			i = o.Ips[l]
 			break
 		}
 	}
+
+	ipac_mutex.Unlock()
 
 	return i
 
@@ -263,6 +274,8 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 	// get the ip entry
 	var entry = IpDetails(o, addr)
+
+	ipac_mutex.Lock()
 
 	// set the last access time of the ip
 	entry.LastAccess = int(time.Now().Unix())
@@ -334,6 +347,8 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 	}
 
+	ipac_mutex.Unlock()
+
 	if (entry.Blocked == true) {
 		return false
 	} else {
@@ -344,18 +359,26 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 func Purge(o *Ipac) {
 	// clear all ips
+	ipac_mutex.Lock()
 	o.Purge = true
+	ipac_mutex.Unlock()
 }
 
 func ModifyAuth(o *Ipac, authed int, addr string) {
+
+	ipac_mutex.Lock()
 
 	if (o.Purge == true) {
 		// do not allow modification while purging
 		return
 	}
 
+	ipac_mutex.Unlock()
+
 	// get the ip entry
 	var entry = IpDetails(o, addr)
+
+	ipac_mutex.Lock()
 
 	var now = int(time.Now().Unix())
 
@@ -415,6 +438,8 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 			break
 		}
 	}
+
+	ipac_mutex.Unlock()
 
 	return
 
