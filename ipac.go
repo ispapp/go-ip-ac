@@ -129,143 +129,138 @@ func Init(o *Ipac) {
 
 	o.LastCleanup = int(time.Now().Unix())
 
-	loop_ticker := time.NewTicker(time.Duration(o.CleanupLoopSeconds) * time.Second)
-	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case t := <-loop_ticker.C:
-				_ = t
-				//fmt.Printf("ipac at %s\n", t)
-				//fmt.Println(o.Ips)
+	go clean(o)
 
-				// consider the time since the last interval
-				var seconds_since_last_cleanup = int(time.Now().Unix()) - o.LastCleanup
+}
 
-				var expire_older_than = o.BlockForSeconds - seconds_since_last_cleanup
+func clean(o *Ipac) {
 
-				var ctotal = 0
-				var cblocked = 0
-				var cwarn = 0
-				var cblocked_subnet = 0
+	time.Sleep(time.Duration(o.CleanupLoopSeconds) * time.Second)
 
-				if (o.Purge == true) {
-					// remove the ip
-					o.Ips = nil
-					continue
-				}
+	// consider the time since the last interval
+	var seconds_since_last_cleanup = int(time.Now().Unix()) - o.LastCleanup
 
-				ipac_mutex.Lock()
+	var expire_older_than = o.BlockForSeconds - seconds_since_last_cleanup
 
-				// clear expired ips
-				for i := range o.Ips {
+	var ctotal = 0
+	var cblocked = 0
+	var cwarn = 0
+	var cblocked_subnet = 0
 
-					var entry = o.Ips[i]
+	ipac_mutex.Lock()
 
-					var age_of_ip = int(time.Now().Unix()) - entry.LastAccess
+	// show all the Ipac data
+	//fmt.Println(o)
 
-					if (age_of_ip > expire_older_than) {
+	if (o.Purge == true) {
+		// remove the ip
+		o.Ips = nil
+		ipac_mutex.Unlock()
+		return
+	}
 
-						// unblock the ip at the OS level
-						modify_ip_block_os(false, entry)
+	// clear expired ips
+	for i := range o.Ips {
 
-						// delete the ip
-						copy(o.Ips[i:], o.Ips[i+1:]) // Shift a[i+1:] left one index.
-						o.Ips = o.Ips[:len(o.Ips)-1]
+		var entry = o.Ips[i]
 
-					} else {
+		var age_of_ip = int(time.Now().Unix()) - entry.LastAccess
 
-						// this ip was not deleted, count it
-						ctotal += 1
-						if (entry.Blocked == true) {
-							cblocked += 1
-						}
-						if (entry.Warn == true) {
-							cwarn += 1
-						}
+		if (age_of_ip > expire_older_than) {
 
-					}
+			// unblock the ip at the OS level
+			modify_ip_block_os(false, entry)
 
-				}
+			// delete the ip
+			copy(o.Ips[i:], o.Ips[i+1:]) // Shift a[i+1:] left one index.
+			o.Ips = o.Ips[:len(o.Ips)-1]
 
-				// update the ipac object
-				o.TotalCount = ctotal
-				o.BlockedCount = cblocked
-				o.WarnCount = cwarn
+		} else {
 
-				// update the last cleanup
-				o.LastCleanup = int(time.Now().Unix())
+			// this ip was not deleted, count it
+			ctotal += 1
+			if (entry.Blocked == true) {
+				cblocked += 1
+			}
+			if (entry.Warn == true) {
+				cwarn += 1
+			}
 
-				// handle subnet group bans
-				for i := range o.Ipv6Subnets {
+		}
 
-					if (o.Ipv6Subnets[i].BlockedTs == 0) {
+	}
 
-						// this subnet group is blocked
-						// test if the block should expire
+	// update the ipac object
+	o.TotalCount = ctotal
+	o.BlockedCount = cblocked
+	o.WarnCount = cwarn
 
-						var age_of_ban = int(time.Now().Unix()) - o.Ipv6Subnets[i].BlockedTs
+	// update the last cleanup
+	o.LastCleanup = int(time.Now().Unix())
 
-						if (age_of_ban > expire_older_than) {
-							// unblock this subnet group
-							ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
-							// delete it
-							copy(o.Ipv6Subnets[i:], o.Ipv6Subnets[i+1:]) // Shift a[i+1:] left one index.
-							o.Ipv6Subnets = o.Ipv6Subnets[:len(o.Ipv6Subnets)-1]
-						} else {
-							// increment the blocked subnet count for this clean loop iteration
-							cblocked_subnet += 1
-						}
+	// handle subnet group bans
+	for i := range o.Ipv6Subnets {
 
-						// this group is already blocked
-						continue
+		if (o.Ipv6Subnets[i].BlockedTs == 0) {
 
-					}
+			// this subnet group is blocked
+			// test if the block should expire
 
-					if (o.Ipv6Subnets[i].IpBans >= o.BlockIpv6SubnetsBreach) {
+			var age_of_ban = int(time.Now().Unix()) - o.Ipv6Subnets[i].BlockedTs
 
-						// this subnet group has breached the limit
-						// block it
-						ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
-						o.Ipv6Subnets[i].BlockedTs = int(time.Now().Unix())
+			if (age_of_ban > expire_older_than) {
+				// unblock this subnet group
+				ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
+				// delete it
+				copy(o.Ipv6Subnets[i:], o.Ipv6Subnets[i+1:]) // Shift a[i+1:] left one index.
+				o.Ipv6Subnets = o.Ipv6Subnets[:len(o.Ipv6Subnets)-1]
+			} else {
+				// increment the blocked subnet count for this clean loop iteration
+				cblocked_subnet += 1
+			}
 
-						// increment the blocked subnet count
-						cblocked_subnet += 1
+			// this group is already blocked
+			continue
 
-						if (o.Mail != "") {
+		}
 
-							// send notification
+		if (o.Ipv6Subnets[i].IpBans >= o.BlockIpv6SubnetsBreach) {
 
-						}
+			// this subnet group has breached the limit
+			// block it
+			ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
+			o.Ipv6Subnets[i].BlockedTs = int(time.Now().Unix())
 
-					}
+			// increment the blocked subnet count
+			cblocked_subnet += 1
 
-				}
+			if (o.Mail != "") {
 
-				// update the ipac blocked subnet count
-				o.BlockedSubnetCount = cblocked_subnet
-
-				if (o.Purge == true) {
-					// reset to false
-					o.Purge = false
-				}
-
-				if (o.Mail != "") {
-
-					// send notifications via email
-
-				}
-
-				ipac_mutex.Unlock()
+				// send notification
 
 			}
-		}
-	}()
 
-	//loop_ticker.Stop()
-	//done <- true
+		}
+
+	}
+
+	// update the ipac blocked subnet count
+	o.BlockedSubnetCount = cblocked_subnet
+
+	if (o.Purge == true) {
+		// reset to false
+		o.Purge = false
+	}
+
+	if (o.Mail != "") {
+
+		// send notifications via email
+
+	}
+
+	ipac_mutex.Unlock()
+
+	go clean(o)
 
 }
 
