@@ -31,7 +31,7 @@ o.BlockForSeconds = 60 * 60 * 24
 o.BlockIpv6SubnetsGroupDepth = 4
 
 // the number of IP bans within a subnet group required for a subnet group to be blocked
-o.block_ipv6_subnets_breach = 40
+o.BlockIpv6SubnetsBreach = 40
 // number of lowest level subnets to block
 // multiplied by itself for each step back
 //
@@ -62,7 +62,7 @@ o.NotifyAfterAbsurdAuthAttempts = 20
 
 // set this string to send an email notification regarding
 // new IP addresses were banned
-// new IP addresses exceeded the absurd_auth_attempts limit
+// new IP addresses exceeded the o.NotifyAfterAbsurdAuthAttempts limit
 // a new subnet was blocked
 
 // string with smtp credentials
