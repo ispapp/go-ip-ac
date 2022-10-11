@@ -35,6 +35,7 @@ type Ip struct {
 type Ipv6Subnet struct {
 	Group				string
 	IpBans				int
+	BlockedTs			int
 }
 
 type Ipac struct {
@@ -148,7 +149,7 @@ func Init(o *Ipac) {
 				var ctotal = 0
 				var cblocked = 0
 				var cwarn = 0
-				// IPv6 var cblocked_subnet = 0
+				var cblocked_subnet = 0
 
 				if (o.Purge == true) {
 					// remove the ip
@@ -197,7 +198,52 @@ func Init(o *Ipac) {
 				// update the last cleanup
 				o.LastCleanup = int(time.Now().Unix())
 
-				// IPv6
+				// handle subnet group bans
+				for i := range o.Ipv6Subnets {
+
+					if (o.Ipv6Subnets[i].BlockedTs == 0) {
+
+						// this subnet group is blocked
+						// test if the block should expire
+
+						var age_of_ban = int(time.Now().Unix()) - o.Ipv6Subnets[i].BlockedTs
+
+						if (age_of_ban > expire_older_than) {
+							// unblock this subnet group
+							ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
+							// delete it
+						} else {
+							// increment the blocked subnet count for this clean loop iteration
+							cblocked_subnet += 1
+						}
+
+						// this group is already blocked
+						continue
+
+					}
+
+					if (o.Ipv6Subnets[i].IpBans >= o.BlockIpv6SubnetsBreach) {
+
+						// this subnet group has breached the limit
+						// block it
+						ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
+						o.Ipv6Subnets[i].BlockedTs = int(time.Now().Unix())
+
+						// increment the blocked subnet count
+						cblocked_subnet += 1
+
+						if (o.Mail != "") {
+
+							// send notification
+
+						}
+
+					}
+
+				}
+
+				// update the ipac blocked subnet count
+				o.BlockedSubnetCount = cblocked_subnet
 
 				if (o.Purge == true) {
 					// reset to false
@@ -412,7 +458,6 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 			}
 
-			// IPv6
 			if (strings.Index(addr, ":") != -1) {
 				// this is an IPv6 address
 
