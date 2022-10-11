@@ -251,7 +251,7 @@ func ipv6_get_ranked_groups(o Ipac, addr string) ([]string) {
 		// remove the last :
 		prefix = strings.TrimRight(prefix, ":")
 
-		// then `o.BlockIpv6SubnetsGroupDepth` to `at` strings of `groups`
+		// then `o.BlockIpv6SubnetsGroupDepth` to `o.BlockIpv6SubnetsGroupDepth+at` strings of `groups`
 		for l := 0; l < at; l++ {
 			prefix += groups[l + o.BlockIpv6SubnetsGroupDepth] + ":"
 		}
