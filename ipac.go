@@ -17,6 +17,7 @@ import (
 	//"fmt"
 	"runtime"
 	"sync"
+	"strings"
 )
 
 type Ip struct {
@@ -32,7 +33,8 @@ type Ip struct {
 }
 
 type Ipv6Subnet struct {
-
+	Group				string
+	IpBans				int
 }
 
 type Ipac struct {
@@ -216,6 +218,101 @@ func Init(o *Ipac) {
 
 	//loop_ticker.Stop()
 	//done <- true
+
+}
+
+func ipv6_get_ranked_groups(o Ipac, addr string) ([]string) {
+
+	// get each ranked group after o.BlockIpv6SubnetsGroupDepth
+	// if addr is ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+	// and o.BlockIpv6SubnetsGroupDepth is 4
+	// return
+	// ffff:ffff:ffff:ffff
+	// ffff:ffff:ffff:ffff:ffff
+	// ffff:ffff:ffff:ffff:ffff:ffff
+	// ffff:ffff:ffff:ffff:ffff:ffff:ffff
+	// to match by these prefixes as ipv6 subnets quickly
+
+	var groups = strings.Split(addr, ":")
+
+	var ranked_groups []string
+
+	var at = 0
+
+	for g := 0; g < o.BlockIpv6SubnetsGroupDepth; g++ {
+
+		var prefix = ""
+
+		// add first to `o.BlockIpv6SubnetsGroupDepth` strings of `groups`
+		for l := 0; l < o.BlockIpv6SubnetsGroupDepth; l++ {
+			prefix += groups[l] + ":"
+		}
+
+		// remove the last :
+		prefix = strings.TrimRight(prefix, ":")
+
+		// then `o.BlockIpv6SubnetsGroupDepth` to `at` strings of `groups`
+		for l := 0; l < at; l++ {
+			prefix += groups[l + o.BlockIpv6SubnetsGroupDepth] + ":"
+		}
+
+		// remove the last :
+		prefix = strings.TrimRight(prefix, ":")
+
+		// add to ranked_groups
+		ranked_groups = append(ranked_groups, prefix)
+
+		// increment `at`
+		at += 1
+
+	}
+
+	return ranked_groups
+
+}
+
+func ipv6_modify_subnet_block_os(block bool, subnet string) {
+
+	// block or unblock the subnet at the OS level
+
+	// make 'ffff' or 'ffff:ffff' be a full ipv6 subnet specified with zeros instead of CIDR
+	// ffff:0000:0000:0000:0000:0000:0000:0000
+	// ffff:ffff:0000:0000:0000:0000:0000:0000
+	var groups = strings.Split(subnet, ":")
+
+	var total = 8
+	var c = 0
+	var iptables_subnet_string = ""
+	for (c < total) {
+
+		if (len(groups) <= c + 1) {
+			iptables_subnet_string += "0000:"
+		} else {
+			iptables_subnet_string += groups[c] + ":"
+		}
+
+		c += 1
+
+	}
+
+	// remove the last :
+	iptables_subnet_string = strings.TrimRight(iptables_subnet_string, ":")
+
+	if (block == true) {
+
+		// block the ip address
+		if (runtime.GOOS == "linux") {
+			comm("sudo iptables -I goipac -s " + iptables_subnet_string + " -j DROP")
+		}
+
+	} else {
+
+		// unblock the ip address
+		if (runtime.GOOS == "linux") {
+			comm("sudo iptables -D goipac -s " + iptables_subnet_string + " -j DROP")
+		}
+
+	}
 
 }
 
