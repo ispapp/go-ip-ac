@@ -221,7 +221,7 @@ func Init(o *Ipac) {
 
 }
 
-func ipv6_get_ranked_groups(o Ipac, addr string) ([]string) {
+func ipv6_get_ranked_groups(o *Ipac, addr string) ([]string) {
 
 	// get each ranked group after o.BlockIpv6SubnetsGroupDepth
 	// if addr is ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
@@ -413,6 +413,33 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 			}
 
 			// IPv6
+			if (strings.Index(addr, ":") != -1) {
+				// this is an IPv6 address
+
+				var ranked_groups = ipv6_get_ranked_groups(o, addr)
+
+				// add the ranked groups to the subnet classifications
+				for a := 0; a < len(ranked_groups); a++ {
+
+					var found = false
+					for l := range o.Ipv6Subnets {
+						if (ranked_groups[l] == o.Ipv6Subnets[l].Group) {
+							// already exists
+							found = true
+							// increment IpBans
+							o.Ipv6Subnets[l].IpBans += 1
+							break
+						}
+					}
+
+					if (found == false) {
+						// add new
+						o.Ipv6Subnets = append(o.Ipv6Subnets, Ipv6Subnet{Group: ranked_groups[a], IpBans: 1})
+					}
+
+				}
+
+			}
 
 		} else if (entry.AbsurdAuthAttempts == o.NotifyAfterAbsurdAuthAttempts) {
 
