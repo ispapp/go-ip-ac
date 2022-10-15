@@ -161,7 +161,7 @@ func clean(o *Ipac) {
 	}
 
 	// clear expired ips
-	for i := range o.Ips {
+	for i := len(o.Ips)-1; i >= 0; i-- {
 
 		var entry = o.Ips[i]
 
@@ -200,7 +200,7 @@ func clean(o *Ipac) {
 	o.LastCleanup = int(time.Now().Unix())
 
 	// handle subnet group bans
-	for i := range o.Ipv6Subnets {
+	for i := len(o.Ipv6Subnets)-1; i >= 0; i-- {
 
 		if (o.Ipv6Subnets[i].BlockedTs == 0) {
 
