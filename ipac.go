@@ -151,13 +151,29 @@ func clean(o *Ipac) {
 	ipac_mutex.Lock()
 
 	// show all the Ipac data
-	//fmt.Println(o)
+	//fmt.Println("clean() iteration", "number of Ips", len(o.Ips), o)
 
 	if (o.Purge == true) {
-		// remove the ip
+
+		// remove the ips
 		o.Ips = nil
+		// remove the IPv6 subnets
+		o.Ipv6Subnets = nil
+
+		// reset o.Purge
+		o.Purge = false
+
+		// unlock the mutex
 		ipac_mutex.Unlock()
+
+		//fmt.Println("Purge completed")
+
+		// run clean again
+		go clean(o)
+
+		// exit this thread
 		return
+
 	}
 
 	// clear expired ips
@@ -257,11 +273,6 @@ func clean(o *Ipac) {
 
 	// update the ipac blocked subnet count
 	o.BlockedSubnetCount = cblocked_subnet
-
-	if (o.Purge == true) {
-		// reset to false
-		o.Purge = false
-	}
 
 	if (o.Mail != "") {
 
@@ -543,14 +554,10 @@ func Purge(o *Ipac) {
 
 func ModifyAuth(o *Ipac, authed int, addr string) {
 
-	ipac_mutex.Lock()
-
 	if (o.Purge == true) {
 		// do not allow modification while purging
 		return
 	}
-
-	ipac_mutex.Unlock()
 
 	// get the ip entry
 	var entry = IpDetails(o, addr)
