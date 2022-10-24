@@ -437,6 +437,15 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 	// get the ip entry
 	var entry = IpDetails(o, addr)
 
+	if (o.Purge == true) {
+		// do not allow modification while purging
+		if (entry.Blocked == true) {
+			return false
+		} else {
+			return true
+		}
+	}
+
 	ipac_mutex.Lock()
 
 	// set the last access time of the ip
