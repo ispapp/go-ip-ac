@@ -54,7 +54,7 @@ o.BlockAfterNewConnections = 600
 
 // block after N invalid authorization attempts
 // this prevents login guessing many times from the same IP address
-o.BlockAfterUnauthedAttempts = 5
+o.BlockAfterUnauthedAttempts = 30
 
 // notify after N absurd auth attempts
 // failed authorization attempts after the IP has been authorized

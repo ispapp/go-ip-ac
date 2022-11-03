@@ -119,7 +119,7 @@ func Init(o *Ipac) {
 		o.BlockAfterNewConnections = 600
 	}
 	if (o.BlockAfterUnauthedAttempts == 0) {
-		o.BlockAfterUnauthedAttempts = 300
+		o.BlockAfterUnauthedAttempts = 30
 	}
 	if (o.NotifyAfterAbsurdAuthAttempts == 0) {
 		o.NotifyAfterAbsurdAuthAttempts = 20
