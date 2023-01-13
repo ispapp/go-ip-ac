@@ -558,6 +558,12 @@ func Purge(o *Ipac) {
 	// clear all ips
 	ipac_mutex.Lock()
 	o.Purge = true
+
+	if (runtime.GOOS == "linux") {
+		// flush the goipac chain
+		comm("sudo iptables -F goipac")
+	}
+
 	ipac_mutex.Unlock()
 }
 
