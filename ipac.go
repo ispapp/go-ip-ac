@@ -592,24 +592,27 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 	} else if (now - entry.LastAccess > o.BlockForSeconds || authed == 2) {
 
 		// authorized or expired
-		// reset the object keys
-		// this removes the requirement for waiting until the next cleanup iteration
-		// as the whole functionality may be executed during that time
-		// and an authorized attempt must reset that possibility
 
-		entry.UnauthedAttempts = 0
-		entry.UnauthedNewConnections = 0
-		entry.AbsurdAuthAttempts = 0
+		// reset the object keys
+		// removes the requirement for waiting until the next cleanup iteration
+
 		entry.Blocked = false
 		entry.Warn = false
 
 		if (authed == 2) {
+			// authorized
 			entry.Authed = true
+		} else {
+			// expired
+			// only reset these counters when ModifyAuth is resetting an expired IP address
+			entry.AbsurdAuthAttempts = 0
+			entry.UnauthedAttempts = 0
+			entry.UnauthedNewConnections = 0
 		}
 
 	} else if (authed == 1) {
 
-		// not authorized or expired
+		// not authorized, not expired
 
 		// increment the invalid authorization attempts counter for this IP address
 		entry.UnauthedAttempts += 1

@@ -8,9 +8,33 @@ GO111MODULE=off go get github.com/andrewhodel/go-ip-ac
 
 ## usage
 
-A `select{}` **must** be at the end of the `main()` function.
+Run `examples/example.go`
 
-Read `examples/example.go`
+```
+var ip_ac ipac.Ipac
+ipac.Init(&ip_ac)
+
+// set authorization status for an IP
+// logout
+ipac.ModifyAuth(&ip_ac, 0, "127.0.0.1")
+// invalid login credentials
+ipac.ModifyAuth(&ip_ac, 1, "127.0.0.1")
+// authorized (valid login credentials)
+ipac.ModifyAuth(&ip_ac, 2, "127.0.0.1")
+
+// test authorization status for an IP
+// this needs to be called every time there is a new IP connection
+var status = ipac.TestIpAllowed(&ip_ac, "127.0.0.1")
+fmt.Printf("TestIpAllowed 127.0.0.1: %t\n", status)
+
+// test if you should warn users from an IP
+var warn = ipac.TestIpWarn(&ip_ac, "127.0.0.1")
+fmt.Printf("TestIpWarn 127.0.0.1: %t\n", warn)
+
+// return details for a specific ip address
+var ip_details = ipac.IpDetails(&ip_ac, "127.0.0.1")
+fmt.Printf("IpDetails 127.0.0.1: %+v\n", ip_details)
+```
 
 ## default options
 
