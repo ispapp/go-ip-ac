@@ -60,14 +60,22 @@ type Ipac struct {
 	BlockedCount			int
 	WarnCount			int
 	BlockedSubnetCount		int
+	ModuleDirectory			string
 }
 
 var ipac_mutex = &sync.Mutex{}
 
-func comm(s string) (string, string) {
+func comm(o *Ipac, s string) (string, string) {
 
 	// the command.sh file is required
-	var module_directory = os.Getenv("HOME") + "/go/src/github.com/andrewhodel/go-ip-ac/"
+	var module_directory = ""
+	if (o.ModuleDirectory != "") {
+		// use the configured module directory
+		module_directory = o.ModuleDirectory
+	} else {
+		// use the home directory and go 111 module path
+		module_directory = os.Getenv("HOME") + "/go/src/github.com/andrewhodel/go-ip-ac/"
+	}
 
 	cmd := exec.Command(module_directory + "command.sh", s)
 	var out bytes.Buffer
@@ -89,11 +97,11 @@ func Init(o *Ipac) {
 	// remove existing firewall rules created by go-ip-ac
 	if (runtime.GOOS == "linux") {
 		// first flush the goipac chain
-		comm("sudo iptables -F goipac")
+		comm(o, "sudo iptables -F goipac")
 		// then delete the chain
-		comm("sudo iptables -X goipac")
+		comm(o, "sudo iptables -X goipac")
 		// then add the chain
-		comm("sudo iptables -N goipac")
+		comm(o, "sudo iptables -N goipac")
 	}
 
 	// set options passed to init as default options
@@ -186,7 +194,7 @@ func clean(o *Ipac) {
 		if (age_of_ip > expire_older_than) {
 
 			// unblock the ip at the OS level
-			modify_ip_block_os(false, entry)
+			modify_ip_block_os(o, false, entry)
 
 			// delete the ip
 			copy(o.Ips[i:], o.Ips[i+1:]) // Shift a[i+1:] left one index.
@@ -227,7 +235,7 @@ func clean(o *Ipac) {
 
 			if (age_of_ban > expire_older_than) {
 				// unblock this subnet group
-				ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
+				ipv6_modify_subnet_block_os(o, false, o.Ipv6Subnets[i].Group)
 				// delete it
 				copy(o.Ipv6Subnets[i:], o.Ipv6Subnets[i+1:]) // Shift a[i+1:] left one index.
 				o.Ipv6Subnets = o.Ipv6Subnets[:len(o.Ipv6Subnets)-1]
@@ -255,7 +263,7 @@ func clean(o *Ipac) {
 
 			// this subnet group has breached the limit
 			// block it
-			ipv6_modify_subnet_block_os(false, o.Ipv6Subnets[i].Group)
+			ipv6_modify_subnet_block_os(o, false, o.Ipv6Subnets[i].Group)
 			o.Ipv6Subnets[i].BlockedTs = int(time.Now().Unix())
 
 			// increment the blocked subnet count
@@ -336,7 +344,7 @@ func ipv6_get_ranked_groups(o *Ipac, addr string) ([]string) {
 
 }
 
-func ipv6_modify_subnet_block_os(block bool, subnet string) {
+func ipv6_modify_subnet_block_os(o *Ipac, block bool, subnet string) {
 
 	// block or unblock the subnet at the OS level
 
@@ -367,21 +375,21 @@ func ipv6_modify_subnet_block_os(block bool, subnet string) {
 
 		// block the ip address
 		if (runtime.GOOS == "linux") {
-			comm("sudo iptables -I goipac -s " + iptables_subnet_string + " -j DROP")
+			comm(o, "sudo iptables -I goipac -s " + iptables_subnet_string + " -j DROP")
 		}
 
 	} else {
 
 		// unblock the ip address
 		if (runtime.GOOS == "linux") {
-			comm("sudo iptables -D goipac -s " + iptables_subnet_string + " -j DROP")
+			comm(o, "sudo iptables -D goipac -s " + iptables_subnet_string + " -j DROP")
 		}
 
 	}
 
 }
 
-func modify_ip_block_os(block bool, i Ip) {
+func modify_ip_block_os(o *Ipac, block bool, i Ip) {
 
 	// block or unblock the ip at the OS level
 
@@ -389,14 +397,14 @@ func modify_ip_block_os(block bool, i Ip) {
 
 		// block the ip address
 		if (runtime.GOOS == "linux") {
-			comm("sudo iptables -I goipac -s " + i.Addr + " -j DROP")
+			comm(o, "sudo iptables -I goipac -s " + i.Addr + " -j DROP")
 		}
 
 	} else {
 
 		// unblock the ip address
 		if (runtime.GOOS == "linux") {
-			comm("sudo iptables -D goipac -s " + i.Addr + " -j DROP")
+			comm(o, "sudo iptables -D goipac -s " + i.Addr + " -j DROP")
 		}
 
 	}
@@ -477,7 +485,7 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 			entry.Blocked = true
 
 			// block this ip at the OS level
-			modify_ip_block_os(true, entry)
+			modify_ip_block_os(o, true, entry)
 
 			if (o.Mail != "") {
 
@@ -561,7 +569,7 @@ func Purge(o *Ipac) {
 
 	if (runtime.GOOS == "linux") {
 		// flush the goipac chain
-		comm("sudo iptables -F goipac")
+		comm(o, "sudo iptables -F goipac")
 	}
 
 	ipac_mutex.Unlock()

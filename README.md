@@ -91,6 +91,9 @@ o.NotifyAfterAbsurdAuthAttempts = 20
 
 // string with smtp credentials
 o.Mail = ""
+
+// go-ip-ac module path (required if not in $HOME/go
+o.ModuleDirectory = "/path/to/module"
 ```
 
 ## counts
