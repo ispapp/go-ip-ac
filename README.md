@@ -1,10 +1,12 @@
 ## installation
 
-**Requires** this Go Module to be in `$HOME/go/src/github.com/andrewhodel/go-ip-ac` to work with `iptables`.
+**Requires** this Go Module to be in `$HOME/go/src/github.com/andrewhodel/go-ip-ac` to work with `iptables` unless you set the `ModuleDirectory` option.
 
 ```
 GO111MODULE=off go get github.com/andrewhodel/go-ip-ac
 ```
+
+Run your Go program with `GO111MODULE=off go run program.go`
 
 ## usage
 
