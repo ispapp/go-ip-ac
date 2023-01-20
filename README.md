@@ -96,6 +96,9 @@ o.Mail = ""
 
 // go-ip-ac module path (required if not in $HOME/go
 o.ModuleDirectory = "/path/to/module"
+
+// enable/disable the firewall
+o.NeverBlock = false
 ```
 
 ## counts

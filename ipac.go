@@ -61,6 +61,7 @@ type Ipac struct {
 	WarnCount			int
 	BlockedSubnetCount		int
 	ModuleDirectory			string
+	NeverBlock			bool
 }
 
 var ipac_mutex = &sync.Mutex{}
@@ -440,7 +441,11 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 	// always ran at the start of any request
 	// returns false if the IP address has made too many unauthenticated requests and is not allowed
-	// returns true is the connection is allowed
+	// returns true if the connection is allowed
+
+	if (o.NeverBlock == true) {
+		return true
+	}
 
 	// get the ip entry
 	var entry = IpDetails(o, addr)
@@ -579,6 +584,10 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 
 	if (o.Purge == true) {
 		// do not allow modification while purging
+		return
+	}
+
+	if (o.NeverBlock == true) {
 		return
 	}
 
