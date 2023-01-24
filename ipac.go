@@ -275,7 +275,7 @@ func clean(o *Ipac) {
 			if (o.NotifyClosure != nil) {
 
 				// send notification
-				o.NotifyClosure("IPv6 Subnet Blocked", []string{o.Ipv6Subnets[i].Group})
+				go o.NotifyClosure("IPv6 Subnet Blocked", []string{o.Ipv6Subnets[i].Group})
 
 			}
 
@@ -291,7 +291,7 @@ func clean(o *Ipac) {
 		if (len(o.NextNotifyBlockedIps) > 0) {
 
 			// send notification
-			o.NotifyClosure("IP addresses blocked.", o.NextNotifyBlockedIps)
+			go o.NotifyClosure("IP addresses blocked.", o.NextNotifyBlockedIps)
 
 			// empty slice
 			o.NextNotifyBlockedIps = nil
@@ -301,7 +301,7 @@ func clean(o *Ipac) {
 		if (len(o.NextNotifyAbsurdIps) > 0) {
 
 			// send notification
-			o.NotifyClosure("Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
+			go o.NotifyClosure("Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
 
 			// empty slice
 			o.NextNotifyAbsurdIps = nil
