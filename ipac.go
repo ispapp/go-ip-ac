@@ -39,6 +39,8 @@ type Ipv6Subnet struct {
 	BlockedTs			int
 }
 
+type notify_func func(string, []string)
+
 type Ipac struct {
 	CleanupLoopSeconds		int
 	BlockForSeconds			int
@@ -49,11 +51,11 @@ type Ipac struct {
 	BlockAfterNewConnections	int
 	BlockAfterUnauthedAttempts	int
 	NotifyAfterAbsurdAuthAttempts	int
-	Mail				string
+	NotifyClosure			notify_func
 	Purge				bool
 	LastCleanup			int
-	NextEmailBlockedIps		[]string
-	NextEmailAbsurdIps		[]string
+	NextNotifyBlockedIps		[]string
+	NextNotifyAbsurdIps		[]string
 	Ips				[]Ip
 	Ipv6Subnets			[]Ipv6Subnet
 	TotalCount			int
@@ -270,7 +272,7 @@ func clean(o *Ipac) {
 			// increment the blocked subnet count
 			cblocked_subnet += 1
 
-			if (o.Mail != "") {
+			if (o.NotifyClosure != nil) {
 
 				// send notification
 
@@ -283,9 +285,9 @@ func clean(o *Ipac) {
 	// update the ipac blocked subnet count
 	o.BlockedSubnetCount = cblocked_subnet
 
-	if (o.Mail != "") {
+	if (o.NotifyClosure != nil) {
 
-		// send notifications via email
+		// send notification
 
 	}
 
@@ -492,10 +494,10 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 			// block this ip at the OS level
 			modify_ip_block_os(o, true, entry)
 
-			if (o.Mail != "") {
+			if (o.NotifyClosure != nil) {
 
-				// add to next email
-				o.NextEmailBlockedIps = append(o.NextEmailBlockedIps, entry.Addr)
+				// add to next notify block ips
+				o.NextNotifyBlockedIps = append(o.NextNotifyBlockedIps, entry.Addr)
 
 			}
 
@@ -529,12 +531,12 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 		} else if (entry.AbsurdAuthAttempts == o.NotifyAfterAbsurdAuthAttempts) {
 
-			// too many auth attempts while the IP has an authenticated session, send an email
+			// too many auth attempts while the IP has an authenticated session
 
-			if (o.Mail != "") {
+			if (o.NotifyClosure != nil) {
 
-				// add to next email
-				o.NextEmailAbsurdIps = append(o.NextEmailAbsurdIps, entry.Addr)
+				// add to next notify absurd ips
+				o.NextNotifyAbsurdIps = append(o.NextNotifyAbsurdIps, entry.Addr)
 
 			}
 

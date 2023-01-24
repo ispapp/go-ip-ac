@@ -8,6 +8,15 @@ import (
 func main() {
 
 	var ip_ac ipac.Ipac
+
+	// notify closure, use to send firewall notifications to admins
+	ip_ac.NotifyClosure = func(info string, ips []string) {
+
+		// info is a string about the event
+		// ips is a list of ip addresses related to the event
+
+	}
+
 	ipac.Init(&ip_ac)
 
 	// set authorization status for an IP

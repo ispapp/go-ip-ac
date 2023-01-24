@@ -14,6 +14,15 @@ Run `examples/example.go`
 
 ```
 var ip_ac ipac.Ipac
+
+// notify closure, use to send firewall notifications to admins
+ip_ac.NotifyClosure = func(info string, ips []string) {
+
+	// info is a string about the event
+	// ips is a list of ip addresses related to the event
+
+}
+
 ipac.Init(&ip_ac)
 
 // set authorization status for an IP
@@ -86,13 +95,18 @@ o.BlockAfterUnauthedAttempts = 30
 // failed authorization attempts after the IP has been authorized
 o.NotifyAfterAbsurdAuthAttempts = 20
 
-// set this string to send an email notification regarding
-// new IP addresses were banned
-// new IP addresses exceeded the o.NotifyAfterAbsurdAuthAttempts limit
-// a new subnet was blocked
+// IP addresses were blocked
+// IP addresses exceeded the o.NotifyAfterAbsurdAuthAttempts limit
+// IPv6 subnet was blocked
 
-// string with smtp credentials
-o.Mail = ""
+// set to a function to receive firewall events and ip information
+// leave as nil to not receive this information
+o.NotifyClosure = func(info string, ips []string) {
+
+	// info is a string about the event
+	// ips is a list of ip addresses related to the event
+
+}
 
 // go-ip-ac module path (required if not in $HOME/go
 o.ModuleDirectory = "/path/to/module"
