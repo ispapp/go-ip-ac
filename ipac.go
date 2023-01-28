@@ -141,7 +141,7 @@ func Init(o *Ipac) {
 	//fmt.Printf("default options: %+v\n", o)
 
 	o.LastCleanup = int(time.Now().Unix())
-	o.LastNotifyAbsurd = int(time.Now().Unix())
+	o.LastNotifyAbsurd = int(time.Now().Unix()) - o.BlockForSeconds
 
 	go clean(o)
 
@@ -559,7 +559,7 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 			if (o.NotifyClosure != nil) {
 
-				// add to next notify absurd ips
+				// add unique to next notify absurd ips
 				var already_absurd = false
 				for i := range o.NextNotifyAbsurdIps {
 					if (o.NextNotifyAbsurdIps[i] == entry.Addr) {
