@@ -54,6 +54,7 @@ type Ipac struct {
 	NotifyClosure			notify_func
 	Purge				bool
 	LastCleanup			int
+	LastNotifyAbsurd		int
 	NextNotifyBlockedIps		[]string
 	NextNotifyAbsurdIps		[]string
 	Ips				[]Ip
@@ -140,6 +141,7 @@ func Init(o *Ipac) {
 	//fmt.Printf("default options: %+v\n", o)
 
 	o.LastCleanup = int(time.Now().Unix())
+	o.LastNotifyAbsurd = int(time.Now().Unix())
 
 	go clean(o)
 
@@ -298,13 +300,16 @@ func clean(o *Ipac) {
 
 		}
 
-		if (len(o.NextNotifyAbsurdIps) > 0) {
+		if (len(o.NextNotifyAbsurdIps) > 0 && o.LastNotifyAbsurd > int(time.Now().Unix()) - o.BlockForSeconds) {
 
 			// send notification
 			go o.NotifyClosure("Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
 
 			// empty slice
 			o.NextNotifyAbsurdIps = nil
+
+			// set last notify absurd timestamp
+			o.LastNotifyAbsurd = int(time.Now().Unix())
 
 		}
 
@@ -555,7 +560,17 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 			if (o.NotifyClosure != nil) {
 
 				// add to next notify absurd ips
-				o.NextNotifyAbsurdIps = append(o.NextNotifyAbsurdIps, entry.Addr)
+				var already_absurd = false
+				for i := range o.NextNotifyAbsurdIps {
+					if (o.NextNotifyAbsurdIps[i] == entry.Addr) {
+						// ip address is already in list
+						already_absurd = true
+						break
+					}
+				}
+				if (already_absurd == false) {
+					o.NextNotifyAbsurdIps = append(o.NextNotifyAbsurdIps, entry.Addr)
+				}
 
 			}
 
