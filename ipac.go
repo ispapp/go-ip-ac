@@ -300,7 +300,7 @@ func clean(o *Ipac) {
 
 		}
 
-		if (len(o.NextNotifyAbsurdIps) > 0 && o.LastNotifyAbsurd > int(time.Now().Unix()) - o.BlockForSeconds) {
+		if (len(o.NextNotifyAbsurdIps) > 0 && o.LastNotifyAbsurd < int(time.Now().Unix()) - o.BlockForSeconds) {
 
 			// send notification
 			go o.NotifyClosure("Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
@@ -553,7 +553,7 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 
 			}
 
-		} else if (entry.AbsurdAuthAttempts == o.NotifyAfterAbsurdAuthAttempts) {
+		} else if (entry.AbsurdAuthAttempts >= o.NotifyAfterAbsurdAuthAttempts) {
 
 			// too many auth attempts while the IP has an authenticated session
 
