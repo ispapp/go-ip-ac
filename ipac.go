@@ -81,6 +81,10 @@ func comm(o *Ipac, s string) (string, string) {
 		module_directory = os.Getenv("HOME") + "/go/src/github.com/andrewhodel/go-ip-ac/"
 	}
 
+	if (module_directory[len(module_directory)-1] != '/') {
+		module_directory += "/"
+	}
+
 	cmd := exec.Command(module_directory + "command.sh", s)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
