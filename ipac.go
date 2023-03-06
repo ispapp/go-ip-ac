@@ -104,12 +104,21 @@ func Init(o *Ipac) {
 
 	// remove existing firewall rules created by go-ip-ac
 	if (runtime.GOOS == "linux") {
+
 		// first flush the goipac chain
 		comm(o, "sudo iptables -F goipac")
 		// then delete the chain
 		comm(o, "sudo iptables -X goipac")
 		// then add the chain
 		comm(o, "sudo iptables -N goipac")
+
+		// first flush the goipac chain
+		comm(o, "sudo ip6tables -F goipac")
+		// then delete the chain
+		comm(o, "sudo ip6tables -X goipac")
+		// then add the chain
+		comm(o, "sudo ip6tables -N goipac")
+
 	}
 
 	// set options passed to init as default options
@@ -406,14 +415,14 @@ func ipv6_modify_subnet_block_os(o *Ipac, block bool, subnet string) {
 
 		// block the ip address
 		if (runtime.GOOS == "linux") {
-			comm(o, "sudo iptables -I goipac -s " + iptables_subnet_string + " -j DROP")
+			comm(o, "sudo ip6tables -I goipac -s " + iptables_subnet_string + " -j DROP")
 		}
 
 	} else {
 
 		// unblock the ip address
 		if (runtime.GOOS == "linux") {
-			comm(o, "sudo iptables -D goipac -s " + iptables_subnet_string + " -j DROP")
+			comm(o, "sudo ip6tables -D goipac -s " + iptables_subnet_string + " -j DROP")
 		}
 
 	}
@@ -428,14 +437,22 @@ func modify_ip_block_os(o *Ipac, block bool, i Ip) {
 
 		// block the ip address
 		if (runtime.GOOS == "linux") {
-			comm(o, "sudo iptables -I goipac -s " + i.Addr + " -j DROP")
+			if (strings.Index(i.Addr, ":") > -1) {
+				comm(o, "sudo ip6tables -I goipac -s " + i.Addr + " -j DROP")
+			} else {
+				comm(o, "sudo iptables -I goipac -s " + i.Addr + " -j DROP")
+			}
 		}
 
 	} else {
 
 		// unblock the ip address
 		if (runtime.GOOS == "linux") {
-			comm(o, "sudo iptables -D goipac -s " + i.Addr + " -j DROP")
+			if (strings.Index(i.Addr, ":") > -1) {
+				comm(o, "sudo ip6tables -D goipac -s " + i.Addr + " -j DROP")
+			} else {
+				comm(o, "sudo iptables -D goipac -s " + i.Addr + " -j DROP")
+			}
 		}
 
 	}
@@ -615,6 +632,7 @@ func Purge(o *Ipac) {
 	if (runtime.GOOS == "linux") {
 		// flush the goipac chain
 		comm(o, "sudo iptables -F goipac")
+		comm(o, "sudo ip6tables -F goipac")
 	}
 
 	ipac_mutex.Unlock()
