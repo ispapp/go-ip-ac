@@ -39,7 +39,7 @@ type Ipv6Subnet struct {
 	BlockedTs			int
 }
 
-type notify_func func(string, []string)
+type notify_func func(int, string, []string)
 
 type Ipac struct {
 	CleanupLoopSeconds		int
@@ -290,7 +290,7 @@ func clean(o *Ipac) {
 			if (o.NotifyClosure != nil) {
 
 				// send notification
-				go o.NotifyClosure("IPv6 Subnet Blocked", []string{o.Ipv6Subnets[i].Group})
+				go o.NotifyClosure(2, "IPv6 Subnet Blocked", []string{o.Ipv6Subnets[i].Group})
 
 			}
 
@@ -306,7 +306,7 @@ func clean(o *Ipac) {
 		if (len(o.NextNotifyBlockedIps) > 0) {
 
 			// send notification
-			go o.NotifyClosure("IP addresses blocked.", o.NextNotifyBlockedIps)
+			go o.NotifyClosure(0, "IP addresses blocked.", o.NextNotifyBlockedIps)
 
 			// empty slice
 			o.NextNotifyBlockedIps = nil
@@ -316,7 +316,7 @@ func clean(o *Ipac) {
 		if (len(o.NextNotifyAbsurdIps) > 0 && o.LastNotifyAbsurd < int(time.Now().Unix()) - o.BlockForSeconds) {
 
 			// send notification
-			go o.NotifyClosure("Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
+			go o.NotifyClosure(1, "Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
 
 			// empty slice
 			o.NextNotifyAbsurdIps = nil

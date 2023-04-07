@@ -16,8 +16,9 @@ Run `examples/example.go`
 var ip_ac ipac.Ipac
 
 // notify closure, use to send firewall notifications to admins
-ip_ac.NotifyClosure = func(info string, ips []string) {
+ip_ac.NotifyClosure = func(message_id int, info string, ips []string) {
 
+    // message_id is an int specifying the message id
 	// info is a string about the event
 	// ips is a list of ip addresses related to the event
 
@@ -101,8 +102,9 @@ o.NotifyAfterAbsurdAuthAttempts = 20
 
 // set to a function to receive firewall events and ip information
 // leave as nil to not receive this information
-o.NotifyClosure = func(info string, ips []string) {
+o.NotifyClosure = func(message_id int, info string, ips []string) {
 
+    // message_id is an int specifying the message id
 	// info is a string about the event
 	// ips is a list of ip addresses related to the event
 
