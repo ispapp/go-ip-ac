@@ -27,6 +27,7 @@ type Ip struct {
 	Warn				bool
 	Blocked				bool
 	LastAccess			int
+	OriginalAccess			int
 	LastAuth			int
 	UnauthedNewConnections		int
 	UnauthedAttempts		int
@@ -207,12 +208,14 @@ func clean(o *Ipac) {
 
 		var entry = o.Ips[i]
 
-		var age_of_ip = int(time.Now().Unix()) - entry.LastAccess
+		var age_of_ip = int(time.Now().Unix()) - entry.OriginalAccess
 
 		if (age_of_ip > expire_older_than) {
 
-			// unblock the ip at the OS level
-			modify_ip_block_os(o, false, entry)
+			if (entry.Blocked == true) {
+				// unblock the ip at the OS level
+				modify_ip_block_os(o, false, entry)
+			}
 
 			// delete the ip
 			copy(o.Ips[i:], o.Ips[i+1:]) // Shift a[i+1:] left one index.
@@ -511,6 +514,11 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 	// set the last access time of the ip
 	entry.LastAccess = int(time.Now().Unix())
 
+	if (entry.OriginalAccess != 0) {
+		// set the original access time of the ip
+		entry.OriginalAccess = int(time.Now().Unix())
+	}
+
 	if (entry.Addr == addr) {
 
 		// a matching ip address has been found
@@ -670,7 +678,7 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 
 		entry.AbsurdAuthAttempts += 1
 
-	} else if (now - entry.LastAccess > o.BlockForSeconds || authed == 2) {
+	} else if (now - entry.OriginalAccess > o.BlockForSeconds || authed == 2) {
 
 		// authorized or expired
 
