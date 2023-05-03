@@ -112,6 +112,10 @@ func Init(o *Ipac) {
 		comm(o, "sudo iptables -X goipac")
 		// then add the chain
 		comm(o, "sudo iptables -N goipac")
+		// delete the rule to the chain to input
+		comm(o, "sudo iptables -D INPUT -j goipac")
+		// then add the rule to the chain to input
+		comm(o, "sudo iptables -A INPUT -j goipac")
 
 		// first flush the goipac chain
 		comm(o, "sudo ip6tables -F goipac")
@@ -119,6 +123,10 @@ func Init(o *Ipac) {
 		comm(o, "sudo ip6tables -X goipac")
 		// then add the chain
 		comm(o, "sudo ip6tables -N goipac")
+		// delete the rule to the chain to input
+		comm(o, "sudo ip6tables -D INPUT -j goipac")
+		// then add the rule to the chain to input
+		comm(o, "sudo ip6tables -A INPUT -j goipac")
 
 	}
 
