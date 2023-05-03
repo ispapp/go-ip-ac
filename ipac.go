@@ -514,7 +514,7 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 	// set the last access time of the ip
 	entry.LastAccess = int(time.Now().Unix())
 
-	if (entry.OriginalAccess != 0) {
+	if (entry.OriginalAccess == 0) {
 		// set the original access time of the ip
 		entry.OriginalAccess = int(time.Now().Unix())
 	}
