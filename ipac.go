@@ -517,8 +517,6 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 		}
 	}
 
-	ipac_mutex.Lock()
-
 	// set the last access time of the ip
 	entry.LastAccess = int(time.Now().Unix())
 
@@ -614,23 +612,25 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 		}
 
 		// update the o.Ips table
+		ipac_mutex.Lock()
 		for l := range o.Ips {
 			if (o.Ips[l].Addr == addr) {
 				o.Ips[l] = entry
 				break
 			}
 		}
+		ipac_mutex.Unlock()
 
 	} else {
 
 		// this ip address is new
 		entry.Addr = addr
+		ipac_mutex.Lock()
 		o.Ips = append(o.Ips, entry)
+		ipac_mutex.Unlock()
 		//fmt.Println("ipac.TestIpAllowed, new ip added", len(o.Ips), entry)
 
 	}
-
-	ipac_mutex.Unlock()
 
 	if (entry.Blocked == true) {
 		return false
@@ -641,8 +641,8 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 }
 
 func Purge(o *Ipac) {
+
 	// clear all ips
-	ipac_mutex.Lock()
 	o.Purge = true
 
 	if (runtime.GOOS == "linux") {
@@ -651,7 +651,6 @@ func Purge(o *Ipac) {
 		comm(o, "sudo ip6tables -F goipac")
 	}
 
-	ipac_mutex.Unlock()
 }
 
 func ModifyAuth(o *Ipac, authed int, addr string) {
@@ -667,8 +666,6 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 
 	// get the ip entry
 	var entry = IpDetails(o, addr)
-
-	ipac_mutex.Lock()
 
 	var now = int(time.Now().Unix())
 
@@ -711,6 +708,8 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 
 	// set the last auth time of the ip
 	entry.LastAuth = now
+
+	ipac_mutex.Lock()
 
 	// update the o.Ips table
 	for l := range o.Ips {
