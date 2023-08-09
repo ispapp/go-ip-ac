@@ -564,11 +564,11 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 				var ranked_groups = ipv6_get_ranked_groups(o, addr)
 
 				// add the ranked groups to the subnet classifications
-				for a := 0; a < len(ranked_groups); a++ {
+				for a := range ranked_groups {
 
 					var found = false
 					for l := range o.Ipv6Subnets {
-						if (ranked_groups[l] == o.Ipv6Subnets[l].Group) {
+						if (ranked_groups[a] == o.Ipv6Subnets[l].Group) {
 							// already exists
 							found = true
 							// increment IpBans
