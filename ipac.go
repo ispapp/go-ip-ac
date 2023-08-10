@@ -343,7 +343,7 @@ func clean(o *Ipac) {
 
 }
 
-func ipv6_get_ranked_groups(o *Ipac, addr string) ([]string) {
+func ipv6_get_ranked_groups(o *Ipac, addr string) []string {
 
 	// get each ranked group after o.BlockIpv6SubnetsGroupDepth
 	// if addr is ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
@@ -359,33 +359,14 @@ func ipv6_get_ranked_groups(o *Ipac, addr string) ([]string) {
 
 	var ranked_groups []string
 
-	var at = 0
-
-	for g := 0; g < o.BlockIpv6SubnetsGroupDepth; g++ {
+	for g := o.BlockIpv6SubnetsGroupDepth; g >= 1; g-- {
 
 		var prefix = ""
-
-		// add first to `o.BlockIpv6SubnetsGroupDepth` strings of `groups`
-		for l := 0; l < o.BlockIpv6SubnetsGroupDepth; l++ {
-			prefix += groups[l] + ":"
+		for a := g; a < len(groups); a++ {
+			prefix += groups[a] + ":"
 		}
-
-		// remove the last :
 		prefix = strings.TrimRight(prefix, ":")
-
-		// then `o.BlockIpv6SubnetsGroupDepth` to `o.BlockIpv6SubnetsGroupDepth+at` strings of `groups`
-		for l := 0; l < at; l++ {
-			prefix += groups[l + o.BlockIpv6SubnetsGroupDepth] + ":"
-		}
-
-		// remove the last :
-		prefix = strings.TrimRight(prefix, ":")
-
-		// add to ranked_groups
 		ranked_groups = append(ranked_groups, prefix)
-
-		// increment `at`
-		at += 1
 
 	}
 
