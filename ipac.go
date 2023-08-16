@@ -74,9 +74,9 @@ func comm(o *Ipac, s string) (string, string) {
 
 	// the command.sh file is required
 	var module_directory = ""
-	if (o.ModuleDirectory != "") {
+	if ((*o).ModuleDirectory != "") {
 		// use the configured module directory
-		module_directory = o.ModuleDirectory
+		module_directory = (*o).ModuleDirectory
 	} else {
 		// use the home directory and go 111 module path
 		module_directory = os.Getenv("HOME") + "/go/src/github.com/andrewhodel/go-ip-ac/"
@@ -131,39 +131,39 @@ func Init(o *Ipac) {
 	}
 
 	// set options passed to init as default options
-	if (o.CleanupLoopSeconds == 0) {
-		o.CleanupLoopSeconds = 60
+	if ((*o).CleanupLoopSeconds == 0) {
+		(*o).CleanupLoopSeconds = 60
 	}
-	if (o.BlockForSeconds == 0) {
-		o.BlockForSeconds = 60 * 60 * 24
+	if ((*o).BlockForSeconds == 0) {
+		(*o).BlockForSeconds = 60 * 60 * 24
 	}
-	if (o.BlockIpv6SubnetsGroupDepth == 0) {
-		o.BlockIpv6SubnetsGroupDepth = 4
+	if ((*o).BlockIpv6SubnetsGroupDepth == 0) {
+		(*o).BlockIpv6SubnetsGroupDepth = 4
 	}
-	if (o.BlockIpv6SubnetsBreach == 0) {
-		o.BlockIpv6SubnetsBreach = 40
+	if ((*o).BlockIpv6SubnetsBreach == 0) {
+		(*o).BlockIpv6SubnetsBreach = 40
 	}
-	if (o.WarnAfterNewConnections == 0) {
-		o.WarnAfterNewConnections = 80
+	if ((*o).WarnAfterNewConnections == 0) {
+		(*o).WarnAfterNewConnections = 80
 	}
-	if (o.WarnAfterUnauthedAttempts == 0) {
-		o.WarnAfterUnauthedAttempts = 5
+	if ((*o).WarnAfterUnauthedAttempts == 0) {
+		(*o).WarnAfterUnauthedAttempts = 5
 	}
-	if (o.BlockAfterNewConnections == 0) {
-		o.BlockAfterNewConnections = 600
+	if ((*o).BlockAfterNewConnections == 0) {
+		(*o).BlockAfterNewConnections = 600
 	}
-	if (o.BlockAfterUnauthedAttempts == 0) {
-		o.BlockAfterUnauthedAttempts = 30
+	if ((*o).BlockAfterUnauthedAttempts == 0) {
+		(*o).BlockAfterUnauthedAttempts = 30
 	}
-	if (o.NotifyAfterAbsurdAuthAttempts == 0) {
-		o.NotifyAfterAbsurdAuthAttempts = 20
+	if ((*o).NotifyAfterAbsurdAuthAttempts == 0) {
+		(*o).NotifyAfterAbsurdAuthAttempts = 20
 	}
-	o.Purge = false
+	(*o).Purge = false
 
 	//fmt.Printf("default options: %+v\n", o)
 
-	o.LastCleanup = int(time.Now().Unix())
-	o.LastNotifyAbsurd = int(time.Now().Unix()) - o.BlockForSeconds
+	(*o).LastCleanup = int(time.Now().Unix())
+	(*o).LastNotifyAbsurd = int(time.Now().Unix()) - (*o).BlockForSeconds
 
 	go clean(o)
 
@@ -171,12 +171,12 @@ func Init(o *Ipac) {
 
 func clean(o *Ipac) {
 
-	time.Sleep(time.Duration(o.CleanupLoopSeconds) * time.Second)
+	time.Sleep(time.Duration((*o).CleanupLoopSeconds) * time.Second)
 
 	// consider the time since the last interval
-	var seconds_since_last_cleanup = int(time.Now().Unix()) - o.LastCleanup
+	var seconds_since_last_cleanup = int(time.Now().Unix()) - (*o).LastCleanup
 
-	var expire_older_than = o.BlockForSeconds - seconds_since_last_cleanup
+	var expire_older_than = (*o).BlockForSeconds - seconds_since_last_cleanup
 
 	var ctotal = 0
 	var cblocked = 0
@@ -186,17 +186,17 @@ func clean(o *Ipac) {
 	ipac_mutex.Lock()
 
 	// show all the Ipac data
-	//fmt.Println("clean() iteration", "number of Ips", len(o.Ips), o)
+	//fmt.Println("clean() iteration", "number of Ips", len((*o).Ips), o)
 
-	if (o.Purge == true) {
+	if ((*o).Purge == true) {
 
 		// remove the ips
-		o.Ips = nil
+		(*o).Ips = nil
 		// remove the IPv6 subnets
-		o.Ipv6Subnets = nil
+		(*o).Ipv6Subnets = nil
 
-		// reset o.Purge
-		o.Purge = false
+		// reset (*o).Purge
+		(*o).Purge = false
 
 		// unlock the mutex
 		ipac_mutex.Unlock()
@@ -212,9 +212,9 @@ func clean(o *Ipac) {
 	}
 
 	// clear expired ips
-	for i := len(o.Ips)-1; i >= 0; i-- {
+	for i := len((*o).Ips)-1; i >= 0; i-- {
 
-		var entry = o.Ips[i]
+		var entry = (*o).Ips[i]
 
 		var age_of_ip = int(time.Now().Unix()) - entry.OriginalAccess
 
@@ -226,7 +226,7 @@ func clean(o *Ipac) {
 			}
 
 			// delete the ip
-			o.Ips = append(o.Ips[i:], o.Ips[:i+1]...)
+			(*o).Ips = append((*o).Ips[i:], (*o).Ips[:i+1]...)
 
 		} else {
 
@@ -244,28 +244,28 @@ func clean(o *Ipac) {
 	}
 
 	// update the ipac object
-	o.TotalCount = ctotal
-	o.BlockedCount = cblocked
-	o.WarnCount = cwarn
+	(*o).TotalCount = ctotal
+	(*o).BlockedCount = cblocked
+	(*o).WarnCount = cwarn
 
 	// update the last cleanup
-	o.LastCleanup = int(time.Now().Unix())
+	(*o).LastCleanup = int(time.Now().Unix())
 
 	// handle subnet group bans
-	for i := len(o.Ipv6Subnets)-1; i >= 0; i-- {
+	for i := len((*o).Ipv6Subnets)-1; i >= 0; i-- {
 
-		if (o.Ipv6Subnets[i].BlockedTs == 0) {
+		if ((*o).Ipv6Subnets[i].BlockedTs == 0) {
 
 			// this subnet group is blocked
 			// test if the block should expire
 
-			var age_of_ban = int(time.Now().Unix()) - o.Ipv6Subnets[i].BlockedTs
+			var age_of_ban = int(time.Now().Unix()) - (*o).Ipv6Subnets[i].BlockedTs
 
 			if (age_of_ban > expire_older_than) {
 				// unblock this subnet group
-				ipv6_modify_subnet_block_os(o, false, o.Ipv6Subnets[i].Group)
+				ipv6_modify_subnet_block_os(o, false, (*o).Ipv6Subnets[i].Group)
 				// delete it
-				o.Ipv6Subnets = append(o.Ipv6Subnets[i:], o.Ipv6Subnets[:i+1]...)
+				(*o).Ipv6Subnets = append((*o).Ipv6Subnets[i:], (*o).Ipv6Subnets[:i+1]...)
 			} else {
 				// increment the blocked subnet count for this clean loop iteration
 				cblocked_subnet += 1
@@ -284,22 +284,22 @@ func clean(o *Ipac) {
 		// ffff:ffff = pow(40, 3)
 		// ffff:ffff:ffff = pow(40, 2)
 		// ffff:ffff:ffff:ffff = pow(40, 1)
-		var ip_count_to_breach_subnet = int(math.Pow(float64(o.BlockIpv6SubnetsBreach), float64(o.BlockIpv6SubnetsGroupDepth - len(strings.Split(o.Ipv6Subnets[i].Group, ":")) + 1)))
+		var ip_count_to_breach_subnet = int(math.Pow(float64((*o).BlockIpv6SubnetsBreach), float64((*o).BlockIpv6SubnetsGroupDepth - len(strings.Split((*o).Ipv6Subnets[i].Group, ":")) + 1)))
 
-		if (o.Ipv6Subnets[i].IpBans >= ip_count_to_breach_subnet) {
+		if ((*o).Ipv6Subnets[i].IpBans >= ip_count_to_breach_subnet) {
 
 			// this subnet group has breached the limit
 			// block it
-			ipv6_modify_subnet_block_os(o, false, o.Ipv6Subnets[i].Group)
-			o.Ipv6Subnets[i].BlockedTs = int(time.Now().Unix())
+			ipv6_modify_subnet_block_os(o, false, (*o).Ipv6Subnets[i].Group)
+			(*o).Ipv6Subnets[i].BlockedTs = int(time.Now().Unix())
 
 			// increment the blocked subnet count
 			cblocked_subnet += 1
 
-			if (o.NotifyClosure != nil) {
+			if ((*o).NotifyClosure != nil) {
 
 				// send notification
-				go o.NotifyClosure(2, "IPv6 Subnet Blocked", []string{o.Ipv6Subnets[i].Group})
+				go (*o).NotifyClosure(2, "IPv6 Subnet Blocked", []string{(*o).Ipv6Subnets[i].Group})
 
 			}
 
@@ -308,30 +308,30 @@ func clean(o *Ipac) {
 	}
 
 	// update the ipac blocked subnet count
-	o.BlockedSubnetCount = cblocked_subnet
+	(*o).BlockedSubnetCount = cblocked_subnet
 
-	if (o.NotifyClosure != nil) {
+	if ((*o).NotifyClosure != nil) {
 
-		if (len(o.NextNotifyBlockedIps) > 0) {
+		if (len((*o).NextNotifyBlockedIps) > 0) {
 
 			// send notification
-			go o.NotifyClosure(0, "IP addresses blocked.", o.NextNotifyBlockedIps)
+			go (*o).NotifyClosure(0, "IP addresses blocked.", (*o).NextNotifyBlockedIps)
 
 			// empty slice
-			o.NextNotifyBlockedIps = nil
+			(*o).NextNotifyBlockedIps = nil
 
 		}
 
-		if (len(o.NextNotifyAbsurdIps) > 0 && o.LastNotifyAbsurd < int(time.Now().Unix()) - o.BlockForSeconds) {
+		if (len((*o).NextNotifyAbsurdIps) > 0 && (*o).LastNotifyAbsurd < int(time.Now().Unix()) - (*o).BlockForSeconds) {
 
 			// send notification
-			go o.NotifyClosure(1, "Too many failed login attempts from IP Addresses that are already authenticated.", o.NextNotifyAbsurdIps)
+			go (*o).NotifyClosure(1, "Too many failed login attempts from IP Addresses that are already authenticated.", (*o).NextNotifyAbsurdIps)
 
 			// empty slice
-			o.NextNotifyAbsurdIps = nil
+			(*o).NextNotifyAbsurdIps = nil
 
 			// set last notify absurd timestamp
-			o.LastNotifyAbsurd = int(time.Now().Unix())
+			(*o).LastNotifyAbsurd = int(time.Now().Unix())
 
 		}
 
@@ -345,9 +345,9 @@ func clean(o *Ipac) {
 
 func ipv6_get_ranked_groups(o *Ipac, addr string) []string {
 
-	// get each ranked group after o.BlockIpv6SubnetsGroupDepth
+	// get each ranked group after (*o).BlockIpv6SubnetsGroupDepth
 	// if addr is aaaa:bbbb:cccc:dddd:eeee:ffff:gggg:hhhh
-	// and o.BlockIpv6SubnetsGroupDepth is 4
+	// and (*o).BlockIpv6SubnetsGroupDepth is 4
 	// return
 	// aaaa:bbbb:cccc:dddd
 	// aaaa:bbbb:cccc:dddd:eeee
@@ -359,10 +359,10 @@ func ipv6_get_ranked_groups(o *Ipac, addr string) []string {
 
 	var ranked_groups []string
 
-	for g := 0; g < 8-o.BlockIpv6SubnetsGroupDepth; g++ {
+	for g := 0; g < 8-(*o).BlockIpv6SubnetsGroupDepth; g++ {
 
 		var prefix = ""
-		for a := 0; a < 8-o.BlockIpv6SubnetsGroupDepth+g; a++ {
+		for a := 0; a < 8-(*o).BlockIpv6SubnetsGroupDepth+g; a++ {
 			prefix += groups[a] + ":"
 		}
 		prefix = strings.TrimRight(prefix, ":")
@@ -455,9 +455,9 @@ func IpDetails(o *Ipac, addr string) (Ip) {
 
 	ipac_mutex.Lock()
 
-	for l := range o.Ips {
-		if (o.Ips[l].Addr == addr) {
-			i = o.Ips[l]
+	for l := range (*o).Ips {
+		if ((*o).Ips[l].Addr == addr) {
+			i = (*o).Ips[l]
 			break
 		}
 	}
@@ -480,14 +480,14 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 	// returns false if the IP address has made too many unauthenticated requests and is not allowed
 	// returns true if the connection is allowed
 
-	if (o.NeverBlock == true) {
+	if ((*o).NeverBlock == true) {
 		return true
 	}
 
 	// get the ip entry
 	var entry = IpDetails(o, addr)
 
-	if (o.Purge == true) {
+	if ((*o).Purge == true) {
 		// do not allow modification while purging
 		if (entry.Blocked == true) {
 			return false
@@ -514,17 +514,17 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 		}
 
 		// warn this ip address if required
-		if (entry.UnauthedNewConnections >= o.WarnAfterNewConnections && entry.Warn == false) {
+		if (entry.UnauthedNewConnections >= (*o).WarnAfterNewConnections && entry.Warn == false) {
 			// made too many unauthed connections
 			entry.Warn = true
-		} else if (entry.UnauthedAttempts >= o.WarnAfterUnauthedAttempts && entry.Warn == false) {
+		} else if (entry.UnauthedAttempts >= (*o).WarnAfterUnauthedAttempts && entry.Warn == false) {
 			// made too many unauthed attempts
 			entry.Warn = true
 		}
 
 		// block this ip address if it has made too many unauthed connections
 		// or invalid authorization attempts
-		if ((entry.UnauthedNewConnections >= o.BlockAfterNewConnections || entry.UnauthedAttempts >= o.BlockAfterUnauthedAttempts) && entry.Blocked == false) {
+		if ((entry.UnauthedNewConnections >= (*o).BlockAfterNewConnections || entry.UnauthedAttempts >= (*o).BlockAfterUnauthedAttempts) && entry.Blocked == false) {
 
 			// set the ip address to be blocked
 			entry.Blocked = true
@@ -532,10 +532,10 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 			// block this ip at the OS level
 			modify_ip_block_os(o, true, entry)
 
-			if (o.NotifyClosure != nil) {
+			if ((*o).NotifyClosure != nil) {
 
 				// add to next notify block ips
-				o.NextNotifyBlockedIps = append(o.NextNotifyBlockedIps, entry.Addr)
+				(*o).NextNotifyBlockedIps = append((*o).NextNotifyBlockedIps, entry.Addr)
 
 			}
 
@@ -548,53 +548,53 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 				for a := range ranked_groups {
 
 					var found = false
-					for l := range o.Ipv6Subnets {
-						if (ranked_groups[a] == o.Ipv6Subnets[l].Group) {
+					for l := range (*o).Ipv6Subnets {
+						if (ranked_groups[a] == (*o).Ipv6Subnets[l].Group) {
 							// already exists
 							found = true
 							// increment IpBans
-							o.Ipv6Subnets[l].IpBans += 1
+							(*o).Ipv6Subnets[l].IpBans += 1
 							break
 						}
 					}
 
 					if (found == false) {
 						// add new
-						o.Ipv6Subnets = append(o.Ipv6Subnets, Ipv6Subnet{Group: ranked_groups[a], IpBans: 1})
+						(*o).Ipv6Subnets = append((*o).Ipv6Subnets, Ipv6Subnet{Group: ranked_groups[a], IpBans: 1})
 					}
 
 				}
 
 			}
 
-		} else if (entry.AbsurdAuthAttempts >= o.NotifyAfterAbsurdAuthAttempts) {
+		} else if (entry.AbsurdAuthAttempts >= (*o).NotifyAfterAbsurdAuthAttempts) {
 
 			// too many auth attempts while the IP has an authenticated session
 
-			if (o.NotifyClosure != nil) {
+			if ((*o).NotifyClosure != nil) {
 
 				// add unique to next notify absurd ips
 				var already_absurd = false
-				for i := range o.NextNotifyAbsurdIps {
-					if (o.NextNotifyAbsurdIps[i] == entry.Addr) {
+				for i := range (*o).NextNotifyAbsurdIps {
+					if ((*o).NextNotifyAbsurdIps[i] == entry.Addr) {
 						// ip address is already in list
 						already_absurd = true
 						break
 					}
 				}
 				if (already_absurd == false) {
-					o.NextNotifyAbsurdIps = append(o.NextNotifyAbsurdIps, entry.Addr)
+					(*o).NextNotifyAbsurdIps = append((*o).NextNotifyAbsurdIps, entry.Addr)
 				}
 
 			}
 
 		}
 
-		// update the o.Ips table
+		// update the (*o).Ips table
 		ipac_mutex.Lock()
-		for l := range o.Ips {
-			if (o.Ips[l].Addr == addr) {
-				o.Ips[l] = entry
+		for l := range (*o).Ips {
+			if ((*o).Ips[l].Addr == addr) {
+				(*o).Ips[l] = entry
 				break
 			}
 		}
@@ -605,9 +605,9 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 		// this ip address is new
 		entry.Addr = addr
 		ipac_mutex.Lock()
-		o.Ips = append(o.Ips, entry)
+		(*o).Ips = append((*o).Ips, entry)
 		ipac_mutex.Unlock()
-		//fmt.Println("ipac.TestIpAllowed, new ip added", len(o.Ips), entry)
+		//fmt.Println("ipac.TestIpAllowed, new ip added", len((*o).Ips), entry)
 
 	}
 
@@ -622,7 +622,7 @@ func TestIpAllowed(o *Ipac, addr string) (bool) {
 func Purge(o *Ipac) {
 
 	// clear all ips
-	o.Purge = true
+	(*o).Purge = true
 
 	if (runtime.GOOS == "linux") {
 		// flush the goipac chain
@@ -634,12 +634,12 @@ func Purge(o *Ipac) {
 
 func ModifyAuth(o *Ipac, authed int, addr string) {
 
-	if (o.Purge == true) {
+	if ((*o).Purge == true) {
 		// do not allow modification while purging
 		return
 	}
 
-	if (o.NeverBlock == true) {
+	if ((*o).NeverBlock == true) {
 		return
 	}
 
@@ -690,10 +690,10 @@ func ModifyAuth(o *Ipac, authed int, addr string) {
 
 	ipac_mutex.Lock()
 
-	// update the o.Ips table
-	for l := range o.Ips {
-		if (o.Ips[l].Addr == addr) {
-			o.Ips[l] = entry
+	// update the (*o).Ips table
+	for l := range (*o).Ips {
+		if ((*o).Ips[l].Addr == addr) {
+			(*o).Ips[l] = entry
 			break
 		}
 	}
