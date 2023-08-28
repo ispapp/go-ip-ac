@@ -1,3 +1,3 @@
-module github.com/andrewhodel/go-ip-ac
+module github.com/ispapp/go-ip-ac
 
-go 1.15
+go 1.20
